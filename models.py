@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class TransformerConfig(BaseModel):
@@ -9,6 +9,12 @@ class TransformerConfig(BaseModel):
     num_heads: int = Field(default=4, ge=1)
     d_mlp: int = Field(default=128, ge=8)
     max_seq_len: int = Field(default=32, ge=4)
+
+    @model_validator(mode="after")
+    def validate_heads(self) -> "TransformerConfig":
+        if self.d_model % self.num_heads != 0:
+            raise ValueError(f"d_model ({self.d_model}) must be divisible by num_heads ({self.num_heads})")
+        return self
 
 
 class ActivationSummary(BaseModel):

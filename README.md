@@ -115,17 +115,17 @@ sequenceDiagram
 
 ### Run Suite Inspection
 ```bash
-python -m projects.mechanistic_interpretability_suite.main
+python main.py
 ```
 
 ### Run Benchmark
 ```bash
-python -m projects.mechanistic_interpretability_suite.main --benchmark --iterations 30
+python main.py --benchmark --iterations 30
 ```
 
 ### JSON Export
 ```bash
-python -m projects.mechanistic_interpretability_suite.main --json
+python main.py --json
 ```
 
 ---
@@ -134,7 +134,7 @@ python -m projects.mechanistic_interpretability_suite.main --json
 
 Run tests with pytest:
 ```bash
-pytest projects/mechanistic_interpretability_suite/test_engine.py -v
+pytest test_engine.py -v
 ```
 
 ### Test Coverage Highlights

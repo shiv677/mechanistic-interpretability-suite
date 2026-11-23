@@ -230,6 +230,25 @@ def test_pydantic_schema_validations():
     with pytest.raises(ValidationError):
         SAEConfig(d_model=4)  # ge=8
 
+    with pytest.raises(ValidationError):
+        TransformerConfig(d_model=32, num_heads=3)
+
+
+def test_seq_len_and_patching_edge_cases(sample_model, sample_config):
+    too_long = torch.zeros((1, sample_config.max_seq_len + 1), dtype=torch.long)
+    with pytest.raises(ValueError):
+        sample_model(too_long)
+
+    clean = torch.tensor([[1, 2, 3]], dtype=torch.long)
+    with pytest.raises(ValueError):
+        run_activation_patching(sample_model, clean, torch.tensor([[1, 2]], dtype=torch.long), 5, 6)
+
+    # Identical clean and corrupted metrics -> recovery_rate == 0.0
+    zero_denom_res = run_activation_patching(
+        sample_model, clean, torch.tensor([[1, 2, 4]], dtype=torch.long), 5, 5, components=["resid_pre"], positions=[None]
+    )
+    assert all(r.recovery_rate == 0.0 for r in zero_denom_res)
+
 
 def test_suite_end_to_end_report():
     report = run_mechanistic_suite()

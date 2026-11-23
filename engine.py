@@ -152,6 +152,8 @@ class SimpleTransformer(nn.Module):
         patch_dict: Optional[Dict[Tuple[str, int, Optional[int]], torch.Tensor]] = None,
     ) -> torch.Tensor:
         seq_len = input_ids.size(1)
+        if seq_len > self.cfg.max_seq_len:
+            raise ValueError(f"Sequence length {seq_len} exceeds max_seq_len {self.cfg.max_seq_len}")
         positions = torch.arange(seq_len, device=input_ids.device).unsqueeze(0)
         x = self.tok_embed(input_ids) + self.pos_embed(positions)
 
@@ -344,6 +346,8 @@ def run_activation_patching(
     components: Optional[List[str]] = None,
     positions: Optional[List[int]] = None,
 ) -> List[PatchingResult]:
+    if clean_tokens.shape != corrupted_tokens.shape:
+        raise ValueError(f"Token shape mismatch: {clean_tokens.shape} vs {corrupted_tokens.shape}")
     if components is None:
         components = ["resid_pre", "attn_out", "mlp_out", "resid_post"]
 
@@ -358,8 +362,6 @@ def run_activation_patching(
     clean_metric = logit_diff(clean_logits)
     corrupted_metric = logit_diff(corrupted_logits)
     denom = clean_metric - corrupted_metric
-    if abs(denom) < 1e-6:
-        denom = 1e-6
 
     if positions is None:
         positions = [None] + list(range(clean_tokens.size(1)))
@@ -376,7 +378,7 @@ def run_activation_patching(
                     model, corrupted_tokens, patch_dict=patch_dict
                 )
                 patched_metric = logit_diff(patched_logits)
-                recovery = (patched_metric - corrupted_metric) / denom
+                recovery = 0.0 if abs(denom) < 1e-6 else (patched_metric - corrupted_metric) / denom
 
                 results.append(
                     PatchingResult(
